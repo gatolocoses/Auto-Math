@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Inline Math Evaluator",
+  "description": "Auto-completes math equations in inputs and textareas when a line ends with '=  '. Only capital X is supported for multiplication.",
+  "version": "1.0.0",
+  "action": {
+    "default_title": "Inline Math Evaluator"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
