@@ -43,140 +43,29 @@ function parseEquation(lineText) {
 }
 
 function evaluateExpression(rawExpression) {
-    try {
-        const expr = normalizeExpression(rawExpression);
-        const value = simpleParser(expr);
-        if (!Number.isFinite(value)) return 'Invalid expression';
-
-        // Format result: up to 8 decimals, trim trailing zeros
-        let formatted = value.toFixed(8).replace(/\.?0+$/, '');
-        return formatted;
-    } catch (e) {
-        console.error('Error evaluating expression:', e);
-        return 'Invalid expression';
+    if (typeof window !== 'undefined' && window.MathEval && typeof window.MathEval.evaluateExpression === 'function') {
+        return window.MathEval.evaluateExpression(rawExpression);
     }
+    console.error('MathEval module not available');
+    return 'Invalid expression';
 }
 
 // Only map capital X to '*'; leave other symbols unchanged
 function normalizeExpression(expression) {
-    // Replace only capital X with * for multiplication
-    let expr = expression.replace(/X/g, '*');
-
-    // Collapse multiple spaces to single spaces for cleaner tokenization
-    expr = expr.replace(/\s+/g, ' ').trim();
-
-    // Validate allowed characters (digits, dot, whitespace, + - * / ( ) %)
-    // Note: We allow capital X in input but it was converted above
-    if (/[^0-9.+\-*/()%()\s]/.test(expr)) {
-        throw new Error('Invalid characters in expression');
+    if (typeof window !== 'undefined' && window.MathEval && typeof window.MathEval.normalizeExpression === 'function') {
+        return window.MathEval.normalizeExpression(expression);
     }
-
-    return expr;
+    console.error('MathEval module not available');
+    return expression;
 }
 
 // Shunting-yard parser with unary +/-, %, parentheses validation, and + - * /
 function simpleParser(expression) {
-    // Tokenize: numbers (optional decimal and %), operators, parentheses
-    const tokens = expression.match(/(\d+(?:\.\d+)?%?|\+|\-|\*|\/|\(|\))/g);
-    if (!tokens) throw new Error('Invalid expression');
-
-    const outputQueue = [];
-    const operatorStack = [];
-
-    const precedence = { 'u+': 3, 'u-': 3, '*': 2, '/': 2, '+': 1, '-': 1 };
-    const associativity = { '*': 'L', '/': 'L', '+': 'L', '-': 'L', 'u+': 'R', 'u-': 'R' };
-
-    const isBinaryOperator = (t) => t === '+' || t === '-' || t === '*' || t === '/';
-
-    // Normalize tokens to mark unary +/-
-    const normalized = [];
-    for (let i = 0; i < tokens.length; i++) {
-        const t = tokens[i];
-        const prev = normalized[normalized.length - 1];
-        if ((t === '+' || t === '-') && (i === 0 || isBinaryOperator(prev) || prev === '(' || prev === 'u+' || prev === 'u-')) {
-            normalized.push(t === '+' ? 'u+' : 'u-');
-        } else {
-            normalized.push(t);
-        }
+    if (typeof window !== 'undefined' && window.MathEval && typeof window.MathEval.simpleParser === 'function') {
+        return window.MathEval.simpleParser(expression);
     }
-
-    for (const token of normalized) {
-        if (/^\d+(?:\.\d+)?%?$/.test(token)) {
-            if (token.endsWith('%')) {
-                outputQueue.push(parseFloat(token.slice(0, -1)) / 100);
-            } else {
-                outputQueue.push(parseFloat(token));
-            }
-            continue;
-        }
-
-        if (token in precedence) {
-            while (
-                operatorStack.length &&
-                (operatorStack[operatorStack.length - 1] in precedence) &&
-                (
-                    (associativity[token] === 'L' && precedence[operatorStack[operatorStack.length - 1]] >= precedence[token]) ||
-                    (associativity[token] === 'R' && precedence[operatorStack[operatorStack.length - 1]] > precedence[token])
-                )
-            ) {
-                outputQueue.push(operatorStack.pop());
-            }
-            operatorStack.push(token);
-            continue;
-        }
-
-        if (token === '(') {
-            operatorStack.push(token);
-            continue;
-        }
-
-        if (token === ')') {
-            while (operatorStack.length && operatorStack[operatorStack.length - 1] !== '(') {
-                outputQueue.push(operatorStack.pop());
-            }
-            if (operatorStack.length === 0 || operatorStack[operatorStack.length - 1] !== '(') {
-                throw new Error('Mismatched parentheses');
-            }
-            operatorStack.pop(); // pop '('
-            continue;
-        }
-
-        throw new Error('Invalid token in expression');
-    }
-
-    while (operatorStack.length) {
-        const op = operatorStack.pop();
-        if (op === '(' || op === ')') throw new Error('Mismatched parentheses');
-        outputQueue.push(op);
-    }
-
-    // Evaluate RPN
-    const stack = [];
-    for (const token of outputQueue) {
-        if (typeof token === 'number') {
-            stack.push(token);
-            continue;
-        }
-        if (token === 'u+' || token === 'u-') {
-            const a = stack.pop();
-            if (a === undefined) throw new Error('Invalid expression');
-            stack.push(token === 'u+' ? +a : -a);
-            continue;
-        }
-        const b = stack.pop();
-        const a = stack.pop();
-        if (a === undefined || b === undefined) throw new Error('Invalid expression');
-        switch (token) {
-            case '+': stack.push(a + b); break;
-            case '-': stack.push(a - b); break;
-            case '*': stack.push(a * b); break;
-            case '/': stack.push(b === 0 ? NaN : a / b); break;
-            default: throw new Error('Invalid operator');
-        }
-    }
-
-    if (stack.length !== 1) throw new Error('Invalid expression');
-    return stack[0];
+    console.error('MathEval module not available');
+    return NaN;
 }
 
 function updateActiveLineValue(el, lineStart, lineEnd, newLine) {
