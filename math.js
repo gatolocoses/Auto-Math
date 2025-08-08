@@ -127,7 +127,7 @@
     for (const token of normalized) {
       if (/^\d+(?:\.\d+)?%?$/.test(token)) {
         if (token.endsWith('%')) {
-          outputQueue.push(parseFloat(token.slice(0, -1)) / 100);
+          outputQueue.push({ type: 'percent', value: parseFloat(token.slice(0, -1)) / 100 });
         } else {
           outputQueue.push(parseFloat(token));
         }
@@ -168,6 +168,7 @@
     const stack = [];
     for (const token of outputQueue) {
       if (typeof token === 'number') { stack.push(token); continue; }
+      if (token && typeof token === 'object' && token.type === 'percent') { stack.push(token); continue; }
       if (token === 'u+' || token === 'u-') {
         const a = stack.pop();
         if (a === undefined) throw new Error('Invalid expression');
@@ -177,11 +178,28 @@
       const b = stack.pop();
       const a = stack.pop();
       if (a === undefined || b === undefined) throw new Error('Invalid expression');
+
+      // Handle percent tokens contextually
+      const isPercent = (v) => v && typeof v === 'object' && v.type === 'percent';
+      const percentToNumber = (v) => isPercent(v) ? v.value : v;
+
       switch (token) {
-        case '+': stack.push(a + b); break;
-        case '-': stack.push(a - b); break;
-        case '*': stack.push(a * b); break;
-        case '/': stack.push(b === 0 ? NaN : a / b); break;
+        case '+':
+          if (isPercent(b)) { stack.push(a + a * b.value); }
+          else if (isPercent(a)) { stack.push(b + b * a.value); }
+          else { stack.push(a + b); }
+          break;
+        case '-':
+          if (isPercent(b)) { stack.push(a - a * b.value); }
+          else if (isPercent(a)) { stack.push(b - b * a.value); } // rare, but keeps symmetry
+          else { stack.push(a - b); }
+          break;
+        case '*':
+          stack.push(percentToNumber(a) * percentToNumber(b));
+          break;
+        case '/':
+          stack.push(percentToNumber(b) === 0 ? NaN : percentToNumber(a) / percentToNumber(b));
+          break;
         default: throw new Error('Invalid operator');
       }
     }
