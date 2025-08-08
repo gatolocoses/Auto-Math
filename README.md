@@ -20,6 +20,9 @@ Auto-completes math equations while you type in `input` and `textarea` fields. W
   - `5 X 3 =  ` → becomes `5 X 3 = 15 ␠` (caret moves to the end, after one trailing space)
   - `-(2 + 3) =  ` → becomes `-(2 + 3) = -5 ␠`
   - `2 + (-3) =  ` → becomes `2 + (-3) = -1 ␠`
+- Multiple expressions in a single line are supported. The extension evaluates only the segment after the last `=` before the trigger and preserves earlier results. Example:
+  - Type: `5 X 5 =  ` → becomes `5 X 5 = 25 ␠`
+  - Continue typing: `X 4 =  ` on the same line → becomes `5 X 5 = 25 X 4 = 100 ␠`
 - Trigger condition: the line must end with `= ` (exactly two spaces after `=`). Other triggers are ignored by design.
 
 ## Files
