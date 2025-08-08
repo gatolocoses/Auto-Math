@@ -18,15 +18,28 @@ function getActiveLineBounds(value, caretIndex) {
 }
 
 // Keep the original trigger behavior: expression ending with '=  ' (two spaces)
+// Support multiple expressions on the same line by evaluating only the segment
+// after the last '=' before the trailing trigger.
 function parseEquation(lineText) {
-    // Matches: capture the expression part, followed by '=' and two spaces, at end of line
-    const regex = /([\s\S]*?)(\s*=\s{2})$/; // no multiline needed, we're on a single line
-    const match = lineText.match(regex);
-    if (!match) return null;
+    // Require that the line ends with '=  '
+    if (!/\s*=\s{2}$/.test(lineText)) return null;
 
-    const expression = match[1].trim();
+    // Remove the trailing trigger to inspect the head segment
+    const head = lineText.replace(/\s*=\s{2}$/, '');
+
+    // Find the last '=' before the trigger, if any
+    const lastEqIndex = head.lastIndexOf('=');
+
+    // Left part includes everything up to and including the last '='
+    const leftPart = lastEqIndex >= 0 ? head.slice(0, lastEqIndex + 1) : '';
+
+    // The expression segment is whatever comes after the last '=' (or the whole head if none)
+    const exprSegmentOriginal = lastEqIndex >= 0 ? head.slice(lastEqIndex + 1) : head;
+
+    const expression = exprSegmentOriginal.trim();
     if (!expression || !/\d/.test(expression)) return null;
-    return { expression, fullMatch: match[0] };
+
+    return { expression, leftPart, exprSegmentOriginal };
 }
 
 function evaluateExpression(rawExpression) {
@@ -208,8 +221,16 @@ const onInput = debounce(function (event) {
 
     const result = evaluateExpression(parsed.expression);
 
-    // Replace the line with single spaces around '=' and add one trailing space, then place caret there
-    const newLine = `${parsed.expression.trim()} = ${result} `;
+    // Reconstruct the new line preserving everything before the last '=',
+    // replacing only the trailing expression and adding " = result "
+    let beforeExpr = parsed.leftPart;
+    if (beforeExpr) {
+        // Normalize spacing around the preserved '=' for readability
+        // Convert like "...=something" or "... = something" to "... = "
+        beforeExpr = beforeExpr.replace(/\s*=\s*$/, ' = ');
+    }
+
+    const newLine = `${beforeExpr || ''}${parsed.expression.trim()} = ${result} `;
 
     updateActiveLineValue(target, start, end, newLine);
 
