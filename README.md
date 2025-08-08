@@ -8,11 +8,18 @@ Auto-completes math equations while you type in `input` and `textarea` fields. W
 
 ## Install (Developer Mode)
 
+### Chrome
 1. Download or clone this folder locally.
 2. Open Chrome and go to `chrome://extensions`.
 3. Toggle on "Developer mode" (top-right).
 4. Click "Load unpacked" and select this project folder.
 5. The extension will appear in your extensions list.
+
+### Firefox
+1. Open Firefox and go to `about:debugging#/runtime/this-firefox`.
+2. Click "Load Temporary Add-on...".
+3. Select the `firefox/manifest.json` file from this project.
+4. The add-on will be installed temporarily until you restart Firefox.
 
 ## Usage
 
