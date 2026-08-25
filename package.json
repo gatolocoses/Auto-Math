@@ -1,0 +1,10 @@
+{
+  "name": "inline-math-evaluator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Auto-completes math equations in input and textarea fields (Chrome MV3 extension).",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}

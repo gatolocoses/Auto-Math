@@ -3,7 +3,8 @@
 Auto-completes math equations while you type in `input` and `textarea` fields. When the current line ends with `= ` (equals followed by two spaces), it evaluates the expression on that line and replaces it inline with a single space around `=` plus one trailing space, placing the caret after that space.
 
 - Only capital `X` is accepted for multiplication (by design, due to formatting constraints).
-- Supports `+`, `-`, `*` (via `X`), `/`, parentheses, unary plus/minus, and `%` as a literal (e.g., `10%` → `0.1`).
+- Supports `+`, `-`, `*` (via `X`), `/`, parentheses, and unary plus/minus.
+- Contextual percentages: `100 + 5%` → `105`, `200 - 10%` → `180`, `50 X 10%` → `5`. A standalone percentage (just `10%`) is currently rejected.
 - Detects mismatched parentheses and invalid expressions.
 
 ## Install (Developer Mode)
@@ -29,28 +30,42 @@ Auto-completes math equations while you type in `input` and `textarea` fields. W
 
 - `manifest.json`: Chrome Extension Manifest V3 configuration.
 - `background.js`: Minimal background service worker (MV3), currently logs installation.
-- `content.js`: The content script that performs inline evaluation.
+- `math.js`: The `MathEval` module — tokenizer, trigger/line parsing, shunting-yard parser, and evaluation. Used by the content script and covered by the unit tests.
+- `content.js`: The content script that performs inline evaluation (delegates parsing and math to `math.js`).
 
 ## Constraints and Notes
 
 - Multiplication: Only capital `X` works (e.g., `5 X 3`). Lowercase `x`, `×`, or `*` are not accepted as input; only `X` is recognized and internally mapped to `*` for evaluation.
-- Percentage semantics: Currently `10%` is interpreted as `0.1` (a literal). If you want "percent of previous term" semantics (e.g., `50 + 10%` → `55`), we can add that later.
+- Percentage semantics: percentages are contextual in `+`/`-` (`50 + 10%` → `55`, `200 - 10%` → `180`) and act as plain fractions in multiplication and division (`50 X 10%` → `5`). A standalone percentage (e.g. just `10%`) currently evaluates to `Invalid expression`.
 - Locales: No locale-specific number formatting.
 - Targets: Works only on `input` and `textarea` fields (not `contenteditable`).
 - Safety: Runs broadly on pages. If you need to restrict it, we can add host filters or input type checks.
 
 ## Troubleshooting
 
-- If nothing happens, ensure the line ends with `=  ` (equals followed by two spaces) and that your caret is on that line.
+- If nothing happens, ensure the line ends with `=  ` and that your caret is on that line. The trigger needs **exactly two** trailing spaces — three or more spaces will not fire.
 - If you see "Invalid expression", check for:
   - Mismatched parentheses
   - Disallowed characters
   - Divide by zero
+  - A standalone percentage (e.g. a line that is just `10% =  `)
+- Mismatched parentheses (e.g. `(5 + 3 =  `) currently produce no inline result at all; the error is logged to the page console (F12) instead.
 - If you’re testing on `file://` pages, enable "Allow access to file URLs" for this extension in `chrome://extensions`.
+
+## Releases
+
+Pushing a tag like `v1.0.1` triggers the Release workflow: the tests run, then the extension files are zipped with `manifest.json` at the zip root and attached to a GitHub Release as `inline-math-evaluator-v<version>.zip`.
+
+```bash
+git tag v1.0.1 && git push origin v1.0.1
+```
+
+To update your installed copy: download the zip from [Releases](../../releases), unzip it to a stable folder, then point the extension at it (or click "Reload" in `chrome://extensions` if you replaced files in place).
 
 ## Development
 
-- Edit `content.js` to adjust behavior. Reload the extension via `chrome://extensions` → "Reload".
+- Run the unit tests: `npm test` (Node's built-in test runner — Node 18 or newer, no dependencies). Tests live in `math.test.js` and cover the tokenizer, parser, evaluation, and trigger parsing.
+- Edit `math.js` for evaluation/trigger logic, or `content.js` for field handling. Reload the extension via `chrome://extensions` → "Reload".
 - Open DevTools (F12) on any page, check the Console for logs/errors from the content script.
 - Background logs appear in `chrome://extensions` → click "service worker" link under this extension.
 
