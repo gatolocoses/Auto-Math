@@ -208,6 +208,39 @@
     return stack[0];
   }
 
+  // Determine active line bounds in a multiline input based on caret
+  function getActiveLineBounds(value, caretIndex) {
+    const start = value.lastIndexOf('\n', Math.max(0, caretIndex - 1)) + 1; // if not found, -1 -> 0
+    const nextNewline = value.indexOf('\n', caretIndex);
+    const end = nextNewline === -1 ? value.length : nextNewline;
+    return { start, end };
+  }
+
+  // Trigger: expression ending with '=  ' (two spaces). Supports multiple
+  // expressions on the same line by evaluating only the segment after the
+  // last '=' before the trailing trigger.
+  function parseEquation(lineText) {
+    // Require that the line ends with '=  '
+    if (!/\s*=\s{2}$/.test(lineText)) return null;
+
+    // Remove the trailing trigger to inspect the head segment
+    const head = lineText.replace(/\s*=\s{2}$/, '');
+
+    // Find the last '=' before the trigger, if any
+    const lastEqIndex = head.lastIndexOf('=');
+
+    // Left part includes everything up to and including the last '='
+    const leftPart = lastEqIndex >= 0 ? head.slice(0, lastEqIndex + 1) : '';
+
+    // The expression segment is whatever comes after the last '=' (or the whole head if none)
+    const exprSegmentOriginal = lastEqIndex >= 0 ? head.slice(lastEqIndex + 1) : head;
+
+    const expression = exprSegmentOriginal.trim();
+    if (!expression || !/\d/.test(expression)) return null;
+
+    return { expression, leftPart, exprSegmentOriginal };
+  }
+
   function evaluateExpression(rawExpression) {
     // Build a math-only expression but remember a unit immediately after the first number
     const { expr, unit } = buildNumericExpressionAndUnit(rawExpression);
@@ -221,5 +254,5 @@
     return formatted;
   }
 
-  return { tokenizeRaw, normalizeExpression, simpleParser, evaluateExpression };
+  return { tokenizeRaw, normalizeExpression, simpleParser, evaluateExpression, getActiveLineBounds, parseEquation };
 });

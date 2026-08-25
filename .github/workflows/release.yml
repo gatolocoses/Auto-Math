@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run tests
+        run: node --test
+      - name: Package extension zip
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          mkdir -p dist
+          cp manifest.json background.js content.js math.js dist/
+          cd dist
+          zip -r "../inline-math-evaluator-v${VERSION}.zip" .
+      - name: Create GitHub release and upload zip
+        uses: softprops/action-gh-release@v2
+        with:
+          files: inline-math-evaluator-v*.zip
+          generate_release_notes: true
