@@ -7,13 +7,22 @@ Auto-completes math equations while you type in `input` and `textarea` fields. W
 - Contextual percentages: `100 + 5%` → `105`, `200 - 10%` → `180`, `50 X 10%` → `5`. A standalone percentage (just `10%`) is currently rejected.
 - Detects mismatched parentheses and invalid expressions.
 
-## Install (Developer Mode)
+## Install
 
-1. Download or clone this folder locally.
+### Chrome
+
+1. Download `inline-math-evaluator-v<version>-chrome.zip` from [Releases](../../releases) and unzip it (or clone this repo).
 2. Open Chrome and go to `chrome://extensions`.
 3. Toggle on "Developer mode" (top-right).
-4. Click "Load unpacked" and select this project folder.
-5. The extension will appear in your extensions list.
+4. Click "Load unpacked" and select the unzipped folder.
+
+### Firefox
+
+Firefox uses `manifest.firefox.json` (Manifest V3 with a Firefox extension id and background script). The release zip already contains it renamed to `manifest.json`.
+
+1. Download `inline-math-evaluator-v<version>-firefox.zip` from [Releases](../../releases) and unzip it.
+2. Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on…", and pick the unzipped `manifest.json`.
+3. Temporary add-ons are removed when Firefox restarts. A permanent install requires Mozilla signing: upload the zip as an unlisted add-on on [addons.mozilla.org](https://addons.mozilla.org/developers/), then install the signed `.xpi` it gives you.
 
 ## Usage
 
@@ -29,6 +38,7 @@ Auto-completes math equations while you type in `input` and `textarea` fields. W
 ## Files
 
 - `manifest.json`: Chrome Extension Manifest V3 configuration.
+- `manifest.firefox.json`: Firefox Manifest V3 configuration (same source files, Firefox extension id).
 - `background.js`: Minimal background service worker (MV3), currently logs installation.
 - `math.js`: The `MathEval` module — tokenizer, trigger/line parsing, shunting-yard parser, and evaluation. Used by the content script and covered by the unit tests.
 - `content.js`: The content script that performs inline evaluation (delegates parsing and math to `math.js`).
@@ -54,11 +64,13 @@ Auto-completes math equations while you type in `input` and `textarea` fields. W
 
 ## Releases
 
-Pushing a tag like `v1.0.1` triggers the Release workflow: the tests run, then the extension files are zipped with `manifest.json` at the zip root and attached to a GitHub Release as `inline-math-evaluator-v<version>.zip`.
+Pushing a tag like `v1.0.1` triggers the Release workflow: the tests run, both manifests are checked against the tag version, and one zip per browser is attached to a GitHub Release — `inline-math-evaluator-v<version>-chrome.zip` and `inline-math-evaluator-v<version>-firefox.zip` (plus an identical `.xpi` copy of the Firefox build). Both zips have `manifest.json` at the root; the Firefox zip packages `manifest.firefox.json` under that name.
 
 ```bash
 git tag v1.0.1 && git push origin v1.0.1
 ```
+
+Bump the `version` in **both** `manifest.json` and `manifest.firefox.json` before tagging — the workflow fails if they don't match the tag.
 
 To update your installed copy: download the zip from [Releases](../../releases), unzip it to a stable folder, then point the extension at it (or click "Reload" in `chrome://extensions` if you replaced files in place).
 
